@@ -1,0 +1,135 @@
+""" <leader><leader>Track action ids
+
+source ~/.vimrc
+
+" set <leader> to <space>
+let mapleader = " "
+
+set commentary
+
+""" IdeaVim options
+" Map vim marks to IDEA global marks
+set ideamarks
+set ideajoin
+set matchpairs+=<:>
+
+""" IdeaVim actions
+nmap [[ <Action>(MethodUp)
+nmap ]] <Action>(MethodDown)
+
+nmap gb <Action>(Back)
+nmap gw <Action>(Forward)
+nmap gd <Action>(GotoDeclaration)
+nmap gr <Action>(FindUsages)
+nmap gI <Action>(GotoImplementation)
+
+nmap <leader>gy <Action>(GotoTypeDeclaration)
+nmap <leader>gt <Action>(GotoTest)
+nmap <leader>gm <Action>(GotoSuperMethod)
+nmap <leader>gl <Action>(GotoLine)
+
+nmap <leader>uu <Action>(ShowUsages)
+nmap <leader>vs <Action>(ViewSource)
+nmap <leader>D <Action>(QuickTypeDefinition)
+nmap <leader>im <Action>(QuickImplementations)
+nmap <leader>ti <Action>(ExpressionTypeInfo)
+nmap <leader>oo <Action>(FileStructurePopup)
+
+nmap K <Action>(ShowHoverInfo)
+
+nmap <leader>ft <Action>(ActivateTerminalToolWindow)
+nmap <leader>gg <Action>(ActivateCommitToolWindow)
+" nmap <leader>e <Action>(ActivateProjectToolWindow)
+nmap \\ <Action>(ActivateProjectToolWindow)
+
+nmap <C-h> <C-w>h
+nmap <C-j> <C-w>j
+nmap <C-k> <C-w>k
+nmap <C-l> <C-w>l
+
+" nmap H <Action>(ActivatePreviousTab)
+" nmap <S-j> <C-w>j
+" nmap <S-k> <C-w>k
+" nmap L <Action>(ActivateNextTab)
+
+map <leader>gh <Action>(Diff.PrevChange)
+map <leader>gj <Action>(NextDiff)
+map <leader>gk <Action>(PreviousDiff)
+map <leader>gl <Action>(Diff.NextChange)
+
+nmap <leader>wv <Action>(SplitVertically)
+nmap <leader>ws <Action>(SplitHorizontally)
+nmap <leader>ww <Action>(Unsplit)
+nmap <leader>wa <Action>(UnsplitAll)
+nmap <leader>wo <Action>(HideAllWindows)
+nmap <leader>wz <Action>(ToggleZenMode)
+
+nmap <leader>sc <Action>(GotoClass)
+nmap <leader>sf <Action>(GotoFile)
+nmap <leader>ss <Action>(GotoSymbol)
+nmap <leader>sa <Action>(GotoAction)
+nmap <leader>sg <Action>(FindInPath)
+nmap <leader>se <Action>(SearchEverywhere)
+nmap <leader>sr <Action>(RecentFiles)
+nmap <leader><leader> <Action>(SearchEverywhere)
+
+"nmap <leader>ca <Action>(CodeAction)
+map <leader>rn <Action>(RenameElement)
+map <leader>rm <Action>(ExtractMethod)
+map <leader>rv <Action>(IntroduceVariable)
+map <leader>rf <Action>(IntroduceField)
+map <leader>rs <Action>(ChangeSignature)
+map <leader>rr <Action>(Refactorings.QuickListPopupAction)
+
+map <leader>ca <Action>(ShowIntentionActions)
+map <leader>cs <Action>(SurroundWith)
+map <leader>cc <Action>(EditorCompleteStatement)
+map <leader>cf <Action>(ReformatCode)
+map <leader>ci <Action>(OptimizeImports)
+
+map <leader>tr <Action>(RunClass)
+map <leader>td <Action>(DebugClass)
+map <leader>tc <Action>(RunCoverage)
+map <leader>tl <Action>(Rerun)
+"map <leader>tt <Action>(RunClass)
+"map <leader>tS <Action>(RunClass)
+"map <leader>ts <Action>(RunClass)
+map <leader>ts <Action>(ActivateRunToolWindow)
+map <leader>to <Action>(HideActiveWindow)
+
+map <leader>dB <Action>(ViewBreakpoints)
+map <leader>db <Action>(ToggleLineBreakpoint)
+map <leader>dc <Action>(Resume)
+map <leader>di <Action>(StepInto)
+map <leader>do <Action>(StepOver)
+map <leader>dO <Action>(StepOut)
+map <leader>de <Action>(QuickEvaluateExpression)
+map <leader>dE <Action>(EvaluateExpression)
+
+map <leader>en <Action>(GotoNextError)
+map <leader>ep <Action>(GotoPreviousError)
+
+map <leader>lc <Action>(JumpToLastChange)
+map <leader>ll <Action>(RecentLocations)
+
+map <leader>fs <Action>(NewScratchFile)
+
+" Harpoon
+"nmap <M-j> :action HarpoonerOpenFile0<cr>
+"nmap <M-k> :action HarpoonerOpenFile1<cr>
+"nmap <M-l> :action HarpoonerOpenFile2<cr>
+"nmap <M-;> :action HarpoonerOpenFile3<cr>
+nmap <leader>j :action HarpoonerOpenFile0<cr>
+nmap <leader>k :action HarpoonerOpenFile1<cr>
+nmap <leader>o :action HarpoonerOpenFile2<cr>
+nmap <leader>ø :action HarpoonerOpenFile3<cr>
+
+nmap <C-e> :action HarpoonerQuickMenu<cr>
+nmap <leader>a :action HarpoonerAddFile<cr>
+
+" nmap <M-4> :action HarpoonerOpenFile4<cr>
+" nmap <M-5> :action HarpoonerOpenFile5<cr>
+" nmap <M-6> :action HarpoonerOpenFile6<cr>
+" nmap <M-7> :action HarpoonerOpenFile7<cr>
+" nmap <M-8> :action HarpoonerOpenFile8<cr>
+" nmap <M-9> :action HarpoonerOpenFile9<cr>

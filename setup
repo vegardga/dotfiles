@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+backup_folder="$HOME/.backup_dotfiles_$(date +%Y%m%d_%H:%M:%S)"
+mkdir -p "$backup_folder"
+
+zshrc="$HOME/.zshrc"
+if [ -f "$zshrc" ]; then
+  mv "$zshrc" "$backup_folder"
+fi
+cp "$PWD/zshrc" "$zshrc"
+
+ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
+ghostty="$ghostty_folder/config.ghostty"
+if [ -f "$ghostty" ]; then
+  mv "$ghostty" "$backup_folder"
+fi
+mkdir -p "$ghostty_folder"
+cp "$PWD/ghostty" "$ghostty"
+
+tmux="$HOME/.tmux.conf"
+tmux_sessionizer_path="$PWD/tmux-sessionizer"
+tmux_session_list_path="$PWD/tmux-session-list"
+if [ -f "$tmux" ]; then
+  mv "$tmux" "$backup_folder"
+fi
+cp "$PWD/tmux.conf" "$tmux"
+sed -i'' -e "s|REPLACE_ME_WITH_TMUX_SESSIONIZER_PATH|$tmux_sessionizer_path|g" "$tmux"
+sed -i'' -e "s|REPLACE_ME_WITH_TMUX_SESSION_LIST_PATH|$tmux_session_list_path|g" "$tmux"
+

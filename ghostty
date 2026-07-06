@@ -1,0 +1,47 @@
+font-family = "MesloLGL Nerd Font Mono"
+# font-family = "JetBrainsMono Nerd Font Mono"
+theme = "catppuccin mocha"
+
+# http://hjemmesideskolen.dk/html/testsider/hex2char.php
+#
+# List hex value for character in vim:
+# - find and place cursor over character
+# - press g followed by a
+
+# <perfix>+k (open tmux-sessionizer)
+keybind = super+k=text:\x02\x54
+
+# <perfix>+ø (change to last session)
+keybind = super+ø=text:\x02\x4C
+
+# <perfix>+l (change to next tmux window)
+keybind = super+l=text:\x02\x6E
+
+# <perfix>+y (enter copy mode, ctrl+b [)
+keybind = super+y=text:\x02\x5B
+
+# <perfix>+s (list tmux sessions, ctrl+b s)
+keybind = super+s=text:\x02\x73
+
+# Super+option+left arrow --> ctrl+b p
+keybind = super+option+left=text:\x02\x70
+
+# Super+option+right arrow --> ctrl+b n
+keybind = super+option+right=text:\x02\x6E
+
+# Super+1 --> ctrl-b 1
+keybind = super+digit_1=text:\x02\x31
+
+# Super+2 --> ctrl-b 2
+keybind = super+digit_2=text:\x02\x32
+
+# Super+3 --> ctrl-b 3
+keybind = super+digit_3=text:\x02\x33
+
+# Super+4 --> ctrl-b 4
+keybind = super+digit_4=text:\x02\x34
+
+# Super+5 --> ctrl-b 5
+keybind = super+digit_5=text:\x02\x35
+
+# macos-option-as-alt=true
