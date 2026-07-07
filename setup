@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-chmod u+x tmux-sessionizer
-chmod u+x tmux-session-list
-
+scripts_folder="$HOME/.local/scripts"
+mkdir -p "$scripts_folder"
 mkdir -p $HOME/.zsh/
+mkdir -p $HOME/.local/bin
 
 zsh_syntax_highlighting="$HOME/.zsh/zsh-syntax-highlighting"
 if [[ ! -d "$zsh_syntax_highlighting" ]]; then
@@ -25,20 +25,30 @@ fi
 cp "$PWD/zshrc" "$zshrc"
 
 ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
+mkdir -p "$ghostty_folder"
 ghostty="$ghostty_folder/config.ghostty"
 if [[ -f "$ghostty" ]]; then
   mv "$ghostty" "$backup_folder"
 fi
-mkdir -p "$ghostty_folder"
 cp "$PWD/ghostty" "$ghostty"
 
 tmux="$HOME/.tmux.conf"
-tmux_sessionizer_path="$PWD/tmux-sessionizer"
-tmux_session_list_path="$PWD/tmux-session-list"
 if [[ -f "$tmux" ]]; then
   mv "$tmux" "$backup_folder"
 fi
 cp "$PWD/tmux.conf" "$tmux"
-sed -i'' -e "s|REPLACE_ME_WITH_TMUX_SESSIONIZER_PATH|$tmux_sessionizer_path|g" "$tmux"
-sed -i'' -e "s|REPLACE_ME_WITH_TMUX_SESSION_LIST_PATH|$tmux_session_list_path|g" "$tmux"
+
+chmod u+x tmux-sessionizer
+tmux_sessionizer="$scripts_folder/tmux-sessionizer"
+if [[ -f "$tmux_sessionizer" ]]; then
+  mv "$tmux_sessionizer" "$backup_folder"
+fi
+cp "$PWD/tmux-sessionizer" "$tmux_sessionizer"
+
+chmod u+x tmux-session-list
+tmux_session_list="$scripts_folder/tmux-session-list"
+if [[ -f "$tmux_session_list" ]]; then
+  mv "$tmux_session_list" "$backup_folder"
+fi
+cp "$PWD/tmux-session-list" "$tmux_session_list"
 
