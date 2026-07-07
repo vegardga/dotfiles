@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 scripts_folder="$HOME/.local/scripts"
+
 mkdir -p "$scripts_folder"
 mkdir -p $HOME/.zsh/
 mkdir -p $HOME/.local/bin
@@ -37,6 +38,18 @@ if [[ -f "$tmux" ]]; then
   mv "$tmux" "$backup_folder"
 fi
 cp "$PWD/tmux.conf" "$tmux"
+
+tmux_macos="$HOME/.tmux-macos.conf"
+if [[ -f "$tmux_macos" ]]; then
+  mv "$tmux_macos" "$backup_folder"
+fi
+cp "$PWD/tmux-macos.conf" "$tmux_macos"
+
+tmux_linux="$HOME/.tmux-linux.conf"
+if [[ -f "$tmux_linux" ]]; then
+  mv "$tmux_linux" "$backup_folder"
+fi
+cp "$PWD/tmux-linux.conf" "$tmux_linux"
 
 chmod u+x tmux-sessionizer
 tmux_sessionizer="$scripts_folder/tmux-sessionizer"
