@@ -34,7 +34,9 @@ ZSH_THEME="my-half-life"
 # plugins=(git globalias)
 plugins=(git)
 
-source $ZSH/oh-my-zsh.sh
+if [[ "$(uname)" == "Darwin" ]]; then
+  source $ZSH/oh-my-zsh.sh
+fi
 
 # Navigation
 alias ..='cd ..'
@@ -144,13 +146,17 @@ function logg() {
 }
 
 # Set up fzf key bindings and fuzzy completion
-source <(fzf --zsh)
+if [[ "$(uname)" == "Darwin" ]]; then
+  source <(fzf --zsh)
+fi
 # eval "$(zoxide init zsh)"
 
-alias java11="export JAVA_HOME=`/usr/libexec/java_home -v 11`; java -version"
-alias java17="export JAVA_HOME=`/usr/libexec/java_home -v 17`; java -version"
-alias java21="export JAVA_HOME=`/usr/libexec/java_home -v 21`; java -version"
-export JAVA_HOME="/usr/libexec/java_home -v 17"
+if [[ "$(uname)" == "Darwin" ]]; then
+  alias java11="export JAVA_HOME=`/usr/libexec/java_home -v 11`; java -version"
+  alias java17="export JAVA_HOME=`/usr/libexec/java_home -v 17`; java -version"
+  alias java21="export JAVA_HOME=`/usr/libexec/java_home -v 21`; java -version"
+  export JAVA_HOME="/usr/libexec/java_home -v 17"
+fi
 
 # ---------- PATH ----------
 # Personal binaries/scripts
