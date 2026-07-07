@@ -13,29 +13,15 @@ export XDG_STATE_HOME="$HOME/.local/state"
 export EDITOR="nvim"
 export VISUAL="nvim"
 
-# Path to your Oh My Zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
-
-# ZSH_THEME="robbyrussell"
-ZSH_THEME="my-half-life"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# plugins=(
-#   git
-#   zsh-autosuggestions
-#   zsh-syntax-highlighting
-#   web-search
-#   direnv
-# )
-# plugins=(git globalias)
-plugins=(git)
+autoload -Uz vcs_info
+precmd() { vcs_info }
+zstyle ':vcs_info:git:*' formats '%b '
+setopt PROMPT_SUBST
 
 if [[ "$(uname)" == "Darwin" ]]; then
-  source $ZSH/oh-my-zsh.sh
+  PROMPT='%F{9}v%F{215}e%F{11}g%F{10}a%F{12}r%F{13}d%f %F{green}%~%f %F{blue}${vcs_info_msg_0_}%f$ '
+else
+  PROMPT='%F{11}%n%f %F{green}%~%f %F{blue}${vcs_info_msg_0_}%f$ '
 fi
 
 # Navigation
