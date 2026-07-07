@@ -34,9 +34,6 @@ ZSH_THEME="my-half-life"
 # plugins=(git globalias)
 plugins=(git)
 
-source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-
 source $ZSH/oh-my-zsh.sh
 
 # Navigation
@@ -386,3 +383,14 @@ tmux-ai() {
   tmux select-window -t "$1":1
   tmux switch-client -t $1
 }
+
+# load zsh plugins
+for plug in \
+  $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh \
+  $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh;
+do
+  if [[ -f $plug ]]; then
+    #echo "Loading plugin $plug"
+    source $plug
+  fi
+done

@@ -1,16 +1,32 @@
 #!/usr/bin/env bash
+
+chmod u+x tmux-sessionizer
+chmod u+x tmux-session-list
+
+mkdir -p $HOME/.zsh/
+
+zsh_syntax_highlighting="$HOME/.zsh/zsh-syntax-highlighting"
+if [[ ! -d "$zsh_syntax_highlighting" ]]; then
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$zsh_syntax_highlighting"
+fi
+
+zsh_autosuggestions="$HOME/.zsh/zsh-autosuggestions"
+if [[ ! -d "$zsh_autosuggestions" ]]; then
+  git clone https://github.com/zsh-users/zsh-autosuggestions "$zsh_autosuggestions"
+fi
+
 backup_folder="$HOME/.backup_dotfiles_$(date +%Y%m%d_%H:%M:%S)"
 mkdir -p "$backup_folder"
 
 zshrc="$HOME/.zshrc"
-if [ -f "$zshrc" ]; then
+if [[ -f "$zshrc" ]]; then
   mv "$zshrc" "$backup_folder"
 fi
 cp "$PWD/zshrc" "$zshrc"
 
 ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
 ghostty="$ghostty_folder/config.ghostty"
-if [ -f "$ghostty" ]; then
+if [[ -f "$ghostty" ]]; then
   mv "$ghostty" "$backup_folder"
 fi
 mkdir -p "$ghostty_folder"
@@ -19,7 +35,7 @@ cp "$PWD/ghostty" "$ghostty"
 tmux="$HOME/.tmux.conf"
 tmux_sessionizer_path="$PWD/tmux-sessionizer"
 tmux_session_list_path="$PWD/tmux-session-list"
-if [ -f "$tmux" ]; then
+if [[ -f "$tmux" ]]; then
   mv "$tmux" "$backup_folder"
 fi
 cp "$PWD/tmux.conf" "$tmux"
