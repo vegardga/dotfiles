@@ -18,17 +18,9 @@ precmd() { vcs_info }
 zstyle ':vcs_info:git:*' formats '%b '
 setopt PROMPT_SUBST
 
-if [[ "$(uname)" == "Darwin" ]]; then
-  PROMPT='%F{9}v%F{215}e%F{11}g%F{10}a%F{12}r%F{13}d%f %F{green}%~%f %F{blue}${vcs_info_msg_0_}%f$ '
-else
-  PROMPT='%F{11}%n%f %F{green}%~%f %F{blue}${vcs_info_msg_0_}%f$ '
-fi
-
 # Navigation
 alias ..='cd ..'
 alias ...='cd ../..'
-alias ~='cd ~'
-alias -- -='cd -'          # go back to previous directory
 
 # Listing
 alias ll='ls -alF'
@@ -52,12 +44,7 @@ alias t="tmux"
 alias n="nvim"
 alias v="vim"
 
-# Obsidian
-alias oo="cd ~/Library/Mobile\ Documents/iCloud\~md\~obsidian/Documents/vegardga && nvim"
-
 alias colimastart="colima start --profile rosetta --cpu 4 --memory 8 --disk 100 --arch aarch64 --vm-type=vz --vz-rosetta"
-
-alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 # Kubernetes
 alias k='kubectl'
@@ -131,19 +118,6 @@ function logg() {
         --bind 'ctrl-e:execute(echo {} | grep -o "[a-f0-9]\{7\}" | head -1 | xargs -I % sh -c "gh browse %")'
 }
 
-# Set up fzf key bindings and fuzzy completion
-if [[ "$(uname)" == "Darwin" ]]; then
-  source <(fzf --zsh)
-fi
-# eval "$(zoxide init zsh)"
-
-if [[ "$(uname)" == "Darwin" ]]; then
-  alias java11="export JAVA_HOME=`/usr/libexec/java_home -v 11`; java -version"
-  alias java17="export JAVA_HOME=`/usr/libexec/java_home -v 17`; java -version"
-  alias java21="export JAVA_HOME=`/usr/libexec/java_home -v 21`; java -version"
-  export JAVA_HOME="/usr/libexec/java_home -v 17"
-fi
-
 # ---------- PATH ----------
 # Personal binaries/scripts
 export PATH="$HOME/.local/bin:$PATH"
@@ -171,209 +145,6 @@ worktree() {
     git worktree add -b "$name" ../"$name"
     return
   fi
-}
-
-tmux-ai-cleanup() {
-  local selection
-  selection=$(tmux ls -F '#{session_name}' \
-    | fzf --height=40% --reverse)  || return 0
-
-  echo "$selection"
-  git worktree remove "$selection"
-  git worktree prune
-  ai-cleanup "$selection"
-  tmux kill-session -t "$selection"
-}
-
-
-# usage: ai [--no-state] [name [dir...]]
-#   ai                          - fzf pick from all docker-ai-* containers
-#   ai <name>                   - create/attach to docker-ai-<name>, mounts pwd
-#   ai <name> <dir>             - create/attach to docker-ai-<name>, mounts dir
-#   ai <name> <dir1> <dir2>...  - same, mounts multiple dirs; cwd is dir1
-#   ai --no-state <name>        - same, but omits ai state mounts
-#   ai --worktree
-#   ai --tmux
-#   ai --web-ui
-ai-torgeir() {
-  # prefer podman, fall back to docker
-  local runtime
-  if command -v podman &>/dev/null; then
-    runtime=podman
-  elif command -v docker &>/dev/null; then
-    runtime=docker
-  else
-    echo "Neither docker nor podman found" >&2
-    return 1
-  fi
-
-  # parse flags
-  local no_state=0
-  local create_worktree=0
-  local create_cmd="exec /bin/bash"
-  local -a start_cmd=(/bin/bash)
-  local -a web_ui=()
-  if [[ "$1" == "--no-state" ]]; then
-    no_state=1
-    shift
-  fi
-
-  # create worktree?
-  if [[ "$1" == "--worktree" ]]; then
-    create_worktree=1
-    shift
-  fi
-
-  # run with tmux if enabled
-  if [[ "$1" == "--tmux" ]]; then
-    create_cmd="exec tmux"
-    start_cmd=(tmux attach)
-    shift
-  fi
-  # enable access to container through port 4040 if set
-  if [[ "$1" == "--web-ui" ]]; then
-    web_ui+=(-p "127.0.0.1:4040:4040")
-    shift
-  fi
-
-  local name="$1"
-  shift || true  # remaining args are dirs
-
-  # collect dirs; default to pwd if none given
-  local -a dirs=()
-  for d in "$@"; do
-    [[ "$d" = /* ]] && dirs+=("$d") || dirs+=("$PWD/$d")
-  done
-
-  # create and switch to worktree if flag set
-  if (( create_worktree )); then
-    worktree "$name"
-    cd ../"$name"
-  fi
-
-  # mount pwd if no folder given
-  if (( ${#dirs[@]} == 0 )); then
-    dirs=("$PWD")
-  fi
-
-  # --userns=keep-id maps your host uid straight through inside the container
-  # (batman uid == your uid), so bind mounts just work without chown tricks.
-  # only podman supports this; docker gets no --userns flag.
-  local -a userns_flags=()
-  if [[ "$runtime" == "podman" ]]; then
-    userns_flags=(--userns=keep-id)
-  fi
-
-  # amd gpu: /dev/kfd for rocm compute, /dev/dri for rendering
-  local -a gpu_flags=()
-  if [[ -e /dev/kfd ]] && [[ -e /dev/dri ]]; then
-    gpu_flags=(--device /dev/kfd --device /dev/dri)
-  fi
-  # TODO nvidia
-
-  # hardening defaults (drop linux capabilities and block privilege escalation)
-  local -a security_flags=(--cap-drop=ALL --security-opt=no-new-privileges)
-
-  # mount every requested dir; working dir is the first one
-  local -a volumes=()
-  for d in "${dirs[@]}"; do
-    volumes+=(-v "${d}:${d}")
-  done
-  # set working directory to repo
-  volumes+=(-w "${dirs[1]}")
-
-  volumes+=(
-    -v "$HOME/.m2:/home/batman/.m2"
-    -v "$HOME/.gradle:/home/batman/.gradle"
-    -v "$HOME/.gitconfig.docker-ai:/home/batman/.gitconfig.private:ro"
-  )
-
-  if (( !no_state )); then
-    volumes+=(
-      # opencode
-      -v "$HOME/.local/share/opencode:/home/batman/.local/share/opencode"
-      -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
-      -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json:ro"
-    )
-  fi
-
-  # named container: create or attach
-  if [[ -n "$name" ]]; then
-    local container="docker-ai-$name"
-    if $runtime ps --format '{{.Names}}' | grep -qx "$container"; then
-      $runtime exec -it "$container" ${start_cmd[@]}
-    elif $runtime ps -a --format '{{.Names}}' | grep -qx "$container"; then
-      $runtime start "$container" && $runtime exec -it "$container" ${start_cmd[@]}
-    else
-      echo "Starting $container mounting: ${dirs[*]} ($runtime)"
-      $runtime run -dit --name "$container" "${userns_flags[@]}" "${gpu_flags[@]}" "${security_flags[@]}" "${volumes[@]}" "${web_ui[@]}" docker-ai bash -c $create_cmd
-      sleep 1
-      $runtime exec -it "$container" ${start_cmd[@]}
-    fi
-    return
-  fi
-
-  # no args: pick from all docker-ai-* containers with fzf
-  local selection
-  selection=$($runtime ps -a --format '{{.Names}}\t{{.Status}}' \
-    | grep '^docker-ai-' \
-    | fzf --height=40% --reverse --header="container  status") || return 0
-
-  local container
-  container=$(echo "$selection" | awk '{print $1}')
-
-  if $runtime start "$container"; then
-    $runtime exec -it "$container" ${start_cmd[@]}
-  else
-    echo "Failed to start $container ($runtime)" >&2
-    return 1
-  fi
-}
-
-ai() {
-  local -a volumes=()
-  volumes+=(
-    # -w "$PWD"
-    # -v "$PWD":"$PWD"
-    -w "/home/batman/workspace"
-    -v "$PWD":"/home/batman/workspace"
-    # -v "$HOME/.gitconfig.docker-ai:/home/batman/.gitconfig:ro"
-    # -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
-    # -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json"
-    -e OPENCODE_AUTH_TOKEN=$(op read op://domstol/opencode-auth-token/credential)
-  )
-
-  container_name="docker-ai-$1-$RANDOM"
-  # container run -it --name "docker-ai-$1" "${volumes[@]}" base-opencode-auth
-  # container run -it --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux
-  #
-  container run -dit --name "$container_name" "${volumes[@]}" --cpus 4 --memory 8g docker-ai-auth-tmux bash -c "exec tmux"
-  sleep 0.5
-  container exec -it "$container_name" tmux attach
-  #
-  # podman run -it --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux
-  # podman run -dit --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux bash -c "exec tmux"
-  # sleep 0.5
-  # podman exec -it "$container_name" tmux attach
-  return
-}
-
-tmux-ai() {
-  git worktree add ../"$1"
-
-  tmux new-session -ds $1 -c "../$1"
-  tmux send-keys -t $1 'nvim' C-m
-
-  tmux new-window -n git -c "../$1" -t $1
-  tmux send-keys -t $1 'lazygit' C-m
-
-  tmux new-window -n console -c "../$1" -t $1
-
-  tmux new-window -n ai -c "../$1" -t $1
-  tmux send-keys -t $1 "ai $1" C-m
-
-  tmux select-window -t "$1":1
-  tmux switch-client -t $1
 }
 
 # load zsh plugins

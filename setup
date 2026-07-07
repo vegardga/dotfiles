@@ -25,13 +25,21 @@ if [[ -f "$zshrc" ]]; then
 fi
 cp "$PWD/zshrc" "$zshrc"
 
-ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
-mkdir -p "$ghostty_folder"
-ghostty="$ghostty_folder/config.ghostty"
-if [[ -f "$ghostty" ]]; then
-  mv "$ghostty" "$backup_folder"
+if [[ "$(uname)" == "Darwin" ]]; then
+  cat "$PWD/zshrc-macos" >>"$zshrc"
+else
+  cat "$PWD/zshrc-linux" >>"$zshrc"
 fi
-cp "$PWD/ghostty" "$ghostty"
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
+  mkdir -p "$ghostty_folder"
+  ghostty="$ghostty_folder/config.ghostty"
+  if [[ -f "$ghostty" ]]; then
+    mv "$ghostty" "$backup_folder"
+  fi
+  cp "$PWD/ghostty" "$ghostty"
+fi
 
 tmux="$HOME/.tmux.conf"
 if [[ -f "$tmux" ]]; then
@@ -39,17 +47,11 @@ if [[ -f "$tmux" ]]; then
 fi
 cp "$PWD/tmux.conf" "$tmux"
 
-tmux_macos="$HOME/.tmux-macos.conf"
-if [[ -f "$tmux_macos" ]]; then
-  mv "$tmux_macos" "$backup_folder"
+if [[ "$(uname)" == "Darwin" ]]; then
+  cat "$PWD/tmux-macos.conf" >>"$tmux"
+else
+  cat "$PWD/tmux-linux.conf" >>"$tmux"
 fi
-cp "$PWD/tmux-macos.conf" "$tmux_macos"
-
-tmux_linux="$HOME/.tmux-linux.conf"
-if [[ -f "$tmux_linux" ]]; then
-  mv "$tmux_linux" "$backup_folder"
-fi
-cp "$PWD/tmux-linux.conf" "$tmux_linux"
 
 chmod u+x tmux-sessionizer
 tmux_sessionizer="$scripts_folder/tmux-sessionizer"
@@ -64,4 +66,3 @@ if [[ -f "$tmux_session_list" ]]; then
   mv "$tmux_session_list" "$backup_folder"
 fi
 cp "$PWD/tmux-session-list" "$tmux_session_list"
-
