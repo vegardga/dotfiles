@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 scripts_folder="$HOME/.local/scripts"
+backup_folder="$HOME/.backup_dotfiles/dotfiles_$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p "$scripts_folder"
+mkdir -p "$backup_folder"
 mkdir -p $HOME/.zsh/
 mkdir -p $HOME/.local/bin
 
@@ -15,9 +17,6 @@ zsh_autosuggestions="$HOME/.zsh/zsh-autosuggestions"
 if [[ ! -d "$zsh_autosuggestions" ]]; then
   git clone https://github.com/zsh-users/zsh-autosuggestions "$zsh_autosuggestions"
 fi
-
-backup_folder="$HOME/.backup_dotfiles_$(date +%Y%m%d_%H:%M:%S)"
-mkdir -p "$backup_folder"
 
 zshrc="$HOME/.zshrc"
 if [[ -f "$zshrc" ]]; then
