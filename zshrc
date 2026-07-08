@@ -1,22 +1,54 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
-# ---------- XDG base directories ----------
+# =========================================================
+# XDG base directories
+# =========================================================
+
 # Centralizes config/cache/data locations
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="$HOME/.local/state"
 
-# ---------- Editor ----------
+# =========================================================
+# Editor
+# =========================================================
+
 # Default editor used by git, crontab, etc.
 export EDITOR="nvim"
 export VISUAL="nvim"
+export LANG="no_NO.UTF-8"
+
+
+# =========================================================
+# Completion
+# =========================================================
+
+# Load completion system
+autoload -Uz compinit
+
+# Initialize completion with cached metadata file
+compinit -d "$XDG_CACHE_HOME/zsh/zcompdump"
+
+# Enable interactive completion menu selection
+zstyle ':completion:*' menu select
+
+# Make completion case-insensitive
+# Example: "doc" can complete to "Documents"
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'  # lowercase input matches upper and lower
 
 autoload -Uz vcs_info
 precmd() { vcs_info }
 zstyle ':vcs_info:git:*' formats '%b '
 setopt PROMPT_SUBST
+
+bindkey '^[[Z'      autosuggest-accept
+
+
+# =========================================================
+# Aliases
+# =========================================================
 
 # Navigation
 alias ..='cd ..'
@@ -24,7 +56,7 @@ alias ...='cd ../..'
 
 # Listing
 alias ll='ls -alF'
-alias lt='ls -ltr'         # list by time, newest last
+alias lt='ls -ltr' # list by time, newest last
 
 # Safety net (ask before overwriting)
 alias rm='rm -i'
@@ -40,28 +72,31 @@ alias dcd='docker-compose down'
 # Reload shell config after editing
 alias reload='source ~/.zshrc'
 
+# tmux and vim
 alias t="tmux"
 alias n="nvim"
 alias v="vim"
 
+# Colima
 alias colimastart="colima start --profile rosetta --cpu 4 --memory 8 --disk 100 --arch aarch64 --vm-type=vz --vz-rosetta"
 
 # Kubernetes
 alias k='kubectl'
 
-bindkey '^[[Z'      autosuggest-accept
 
-# bindkey -v
+# =========================================================
+# History
+# =========================================================
 
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000000
 SAVEHIST=10000000
-
 HISTORY_IGNORE="(ls|cd|pwd|exit|cd)*"
+HIST_STAMPS="yyyy-mm-dd"
 
 setopt EXTENDED_HISTORY      # Write the history file in the ':start:elapsed;command' format.
 setopt INC_APPEND_HISTORY    # Write to the history file immediately, not when the shell exits.
-#setopt SHARE_HISTORY         # Share history between all sessions.
+setopt SHARE_HISTORY         # Share history between all sessions.
 setopt HIST_IGNORE_DUPS      # Do not record an event that was just recorded again.
 setopt HIST_IGNORE_ALL_DUPS  # Delete an old recorded event if a new event is a duplicate.
 setopt HIST_IGNORE_SPACE     # Do not record an event starting with a space.
@@ -71,7 +106,18 @@ setopt APPEND_HISTORY        # append to history file (Default)
 setopt HIST_NO_STORE         # Don't store history commands
 setopt HIST_REDUCE_BLANKS    # Remove superfluous blanks from each command line being added to the history.
 
-HIST_STAMPS="yyyy-mm-dd"
+# =========================================================
+# Shell behaviour
+# =========================================================
+
+setopt AUTOCD
+setopt NOBEEP
+setopt NUMERIC_GLOB_SORT  # sort file10 after file9, not after file1
+
+
+# =========================================================
+# Functions
+# =========================================================
 
 # Function to jump to the root of the current Git repository
 # Usage: `gr` (git root)
@@ -118,7 +164,20 @@ function logg() {
         --bind 'ctrl-e:execute(echo {} | grep -o "[a-f0-9]\{7\}" | head -1 | xargs -I % sh -c "gh browse %")'
 }
 
-# ---------- PATH ----------
+worktree() {
+  local name="$1"
+  if [[ -n "$name" ]]; then
+    git worktree add -b "$name" "../$name"
+    cd "../$name"
+    return
+  fi
+}
+
+
+# =========================================================
+# Path
+# =========================================================
+
 # Personal binaries/scripts
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.local/scripts:$PATH"
@@ -128,24 +187,17 @@ export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export LDFLAGS="-L/opt/homebrew/opt/libpq/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/libpq/include"
 
-# ---------- GPG ----------
+
+# =========================================================
+# GPG
+# =========================================================
+
 export GPG_TTY=$(tty)
 
-create_worktree() {
-  local name="$1"
-  if [[ -n "$name" ]]; then
-    git worktree add -b "$name" ../"$name"
-  fi
-  return
-}
 
-worktree() {
-  local name="$1"
-  if [[ -n "$name" ]]; then
-    git worktree add -b "$name" ../"$name"
-    return
-  fi
-}
+# =========================================================
+# zsh plugins
+# =========================================================
 
 # load zsh plugins
 for plug in \
