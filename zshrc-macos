@@ -191,30 +191,36 @@ ai-torgeir() {
 }
 
 ai() {
+  # Do not run AI-container from home
+  if [[ $PWD == $HOME ]]; then
+    echo "Abort, abort! Do not feed AI your home folder"
+    return 1
+  fi
+
+  gitDir="$(git rev-parse --git-common-dir)"
+  if [[ $gitDir == ".git" ]]; then
+    gitDir=$PWD/$gitDir
+  fi
+
   local -a volumes=()
   volumes+=(
-    # -w "$PWD"
-    # -v "$PWD":"$PWD"
-    -w "/home/batman/workspace"
-    -v "$PWD":"/home/batman/workspace"
-    # -v "$HOME/.gitconfig.docker-ai:/home/batman/.gitconfig:ro"
+    -w "$PWD"
+    -v "$PWD":"$PWD"
+    -v "$gitDir":"$gitDir"
+    # -w "/home/batman/workspace"
+    # -v "$PWD":"/home/batman/workspace"
     # -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
     # -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json"
-    -e OPENCODE_AUTH_TOKEN=$(op read op://domstol/opencode-auth-token/credential)
+    -e GITHUB_NAME="Vegard AI"
+    -e GITHUB_EMAIL=$(op read op://DA/Identity/email)
+    -e GITHUB_TOKEN=$(op read op://DA/github-pat-ai-token/token)
+    -e OPENCODE_AUTH_TOKEN=$(op read op://DA/opencode-auth-token/token)
   )
 
-  container_name="docker-ai-$1-$RANDOM"
-  # container run -it --name "docker-ai-$1" "${volumes[@]}" base-opencode-auth
-  # container run -it --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux
-  #
+  container_name="$1-$RANDOM"
   container run -dit --name "$container_name" "${volumes[@]}" --cpus 4 --memory 8g docker-ai-auth-tmux bash -c "exec tmux"
   sleep 0.5
   container exec -it "$container_name" tmux attach
-  #
-  # podman run -it --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux
-  # podman run -dit --name "$container_name" "${volumes[@]}" docker-ai-auth-tmux bash -c "exec tmux"
-  # sleep 0.5
-  # podman exec -it "$container_name" tmux attach
   return
 }
 
