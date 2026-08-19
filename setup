@@ -71,3 +71,9 @@ if [[ -f "$ideavimrc" ]]; then
   mv "$ideavimrc" "$backup_folder"
 fi
 cp "$PWD/ideavimrc" "$ideavimrc"
+
+vimrc="$HOME/.vimrc"
+if [[ -f "$vimrc" ]]; then
+  mv "$vimrc" "$backup_folder"
+fi
+cp "$PWD/vimrc" "$vimrc"
