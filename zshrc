@@ -173,7 +173,7 @@ function logg() {
 }
 
 worktree() {
-  local name="$1"
+  local name="$1-$RANDOM"
   if [[ -n "$name" ]]; then
     git worktree add -b "$name" "../$name"
     cd "../$name"

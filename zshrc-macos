@@ -190,10 +190,28 @@ ai-torgeir() {
   fi
 }
 
+ai-da() {
+  ai $1 "DA"
+}
+
+ai-bekk() {
+  ai $1 "Employee"
+}
+
+ai-vegard() {
+  ai $1 "vegard"
+}
+
 ai() {
   # Do not run AI-container from home
   if [[ $PWD == $HOME ]]; then
     echo "Abort, abort! Do not feed AI your home folder"
+    return 1
+  fi
+
+  # This should not be called directly
+  if [[ -z "$2" ]]; then
+    echo "Use ai-da, ai-bekk or ai-vegard"
     return 1
   fi
 
@@ -212,11 +230,10 @@ ai() {
     # -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
     # -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json"
     -e GITHUB_NAME="Vegard AI"
-    -e GITHUB_EMAIL=$(op read op://DA/Identity/email)
-    -e GITHUB_TOKEN=$(op read op://DA/github-pat-ai-token/token)
-    -e OPENCODE_AUTH_TOKEN=$(op read op://DA/opencode-auth-token/token)
+    -e GITHUB_EMAIL=$(op read op://"$2"/Identity/email)
+    -e GITHUB_TOKEN=$(op read op://"$2"/github-pat-ai-token/token)
+    -e OPENCODE_AUTH_TOKEN=$(op read op://"$2"/opencode-auth-token/token)
   )
-
   container_name="$1-$RANDOM"
   container run -dit --name "$container_name" "${volumes[@]}" --cpus 4 --memory 8g docker-ai-auth-tmux bash -c "exec tmux"
   sleep 0.5
