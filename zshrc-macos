@@ -202,6 +202,17 @@ ai-vegard() {
   ai $1 "vegard"
 }
 
+ai-attach() {
+  # pick from all ai-containers with fzf
+  local selection
+  selection=$(container ls | fzf --reverse) || return 0
+
+  local container_name
+  container_name=$(echo "$selection" | awk '{print $1}')
+
+  container exec -it "$container_name" tmux attach
+}
+
 ai() {
   # Do not run AI-container from home
   if [[ $PWD == $HOME ]]; then
