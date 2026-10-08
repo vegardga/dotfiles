@@ -191,15 +191,15 @@ ai-torgeir() {
 }
 
 ai-da() {
-  ai $1 "DA"
+  ai "DA" $1
 }
 
 ai-bekk() {
-  ai $1 "Employee"
+  ai "Employee" $1
 }
 
 ai-vegard() {
-  ai $1 "vegard"
+  ai "vegard" $1
 }
 
 ai-attach() {
@@ -222,8 +222,12 @@ ai() {
 
   # This should not be called directly
   if [[ -z "$2" ]]; then
-    echo "Use ai-da, ai-bekk or ai-vegard"
-    return 1
+    if [[ $1 == "DA" || $1 == "Employee" || $1 == "vegard" ]]; then
+      echo "Using $1-credentials for op-commands"
+    else
+      echo "Use ai-da, ai-bekk or ai-vegard"
+      return 1
+    fi
   fi
 
   gitDir="$(git rev-parse --git-common-dir)"
@@ -241,12 +245,18 @@ ai() {
     # -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
     # -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json"
     -e GITHUB_NAME="Vegard AI"
-    -e GITHUB_EMAIL=$(op read op://"$2"/Identity/email)
-    -e GITHUB_TOKEN=$(op read op://"$2"/github-pat-ai-token/token)
-    -e OPENCODE_AUTH_TOKEN=$(op read op://"$2"/opencode-auth-token/token)
+    -e GITHUB_EMAIL=$(op read op://"$1"/Identity/email)
+    -e GITHUB_TOKEN=$(op read op://"$1"/github-pat-ai-token/token)
+    -e OPENCODE_AUTH_TOKEN=$(op read op://"$1"/opencode-auth-token/token)
+    # -p 3000:3000
   )
-  container_name="$1-$RANDOM"
-  container run -dit --name "$container_name" "${volumes[@]}" --cpus 4 --memory 8g docker-ai-auth-tmux bash -c "exec tmux"
+
+  container_name="$2-$RANDOM"
+  if [[ -z "$2" ]]; then
+    container_name="$(basename $PWD)-$RANDOM"
+  fi
+
+  container run -dit --name "$container_name" "${volumes[@]}" --cpus 4 --memory 8g docker-ai-auth-tmux zsh -c "exec tmux"
   sleep 0.5
   container exec -it "$container_name" tmux attach
   return
