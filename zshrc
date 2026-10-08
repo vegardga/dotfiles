@@ -51,7 +51,12 @@ zstyle ':vcs_info:*' check-for-staged-changes false
 zstyle ':vcs_info:git:*' formats '%b '
 setopt PROMPT_SUBST
 
-bindkey '^[[Z'      autosuggest-accept
+# Setting line editing to Emacs mode (usually the default)
+bindkey -e
+
+# Setting line ediging to Vim mode
+# bindkey -v
+# bindkey '^[[Z'      autosuggest-accept
 
 
 # =========================================================
