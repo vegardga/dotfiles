@@ -179,11 +179,20 @@ function logg() {
 
 worktree() {
   local name="$1-$RANDOM"
-  if [[ -n "$name" ]]; then
-    git worktree add -b "$name" "../$name"
+  if [[ $# -eq 0 ]]; then
+    # no args: pick from git branches
+    local selection
+    selection=$(git branch -a \
+      | fzf --height=40% --reverse --header="branch") || return 0
+
+    name=$(echo "$selection" | awk '{print $1}' | sed "s|remotes/origin/||")
+    git worktree add "../$name" "$name"
     cd "../$name"
     return
   fi
+  git worktree add -b "$name" "../$name"
+  cd "../$name"
+  return
 }
 
 
