@@ -212,6 +212,11 @@ export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export LDFLAGS="-L/opt/homebrew/opt/libpq/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/libpq/include"
 
+# updated curl version
+export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/curl/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/curl/include"
+
 
 # =========================================================
 # GPG
