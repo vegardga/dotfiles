@@ -66,6 +66,7 @@ bindkey -e
 # Navigation
 alias ..='cd ..'
 alias ...='cd ../..'
+alias gr='cd $(git rev-parse --show-toplevel)'
 
 # Listing
 alias ll='ls -alF'
