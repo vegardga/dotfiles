@@ -240,13 +240,11 @@ ai() {
     -w "$PWD"
     -v "$PWD":"$PWD"
     -v "$gitDir":"$gitDir"
-    # -w "/home/batman/workspace"
-    # -v "$PWD":"/home/batman/workspace"
-    # -v "$HOME/.local/state/opencode:/home/batman/.local/state/opencode"
-    # -v "$HOME/.config/opencode/opencode-ai.json:/home/batman/.config/opencode/opencode.json"
-    -e GITHUB_NAME="Vegard AI"
+    -e GITHUB_USER="Vegard AI"
     -e GITHUB_EMAIL=$(op read op://"$1"/Identity/email)
     -e GITHUB_TOKEN=$(op read op://"$1"/github-pat-ai-token/token)
+    -e ORG_GRADLE_PROJECT_GITHUB_USER="Vegard AI"
+    -e ORG_GRADLE_PROJECT_GITHUB_TOKEN=$(op read op://"$1"/github-pat-ai-token/token)
     -e OPENCODE_AUTH_TOKEN=$(op read op://"$1"/opencode-auth-token/token)
     # -p 3000:3000
   )
