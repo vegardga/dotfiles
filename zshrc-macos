@@ -244,7 +244,7 @@ ai() {
     -e GITHUB_EMAIL=$(op read op://"$1"/Identity/email)
     -e GITHUB_TOKEN=$(op read op://"$1"/github-pat-ai-token/token)
     -e ORG_GRADLE_PROJECT_GITHUB_USER="Vegard AI"
-    -e ORG_GRADLE_PROJECT_GITHUB_TOKEN=$(op read op://"$1"/github-pat-ai-token/token)
+    -e ORG_GRADLE_PROJECT_GITHUB_TOKEN=$(op read op://"$1"/github-pat-gradle-ai-token/token)
     -e OPENCODE_AUTH_TOKEN=$(op read op://"$1"/opencode-auth-token/token)
     # -p 3000:3000
   )
