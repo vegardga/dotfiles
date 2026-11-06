@@ -179,6 +179,10 @@ function logg() {
 }
 
 worktree() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Not a Git repository."
+    return 1
+  fi
   local name="$1-$RANDOM"
   if [[ $# -eq 0 ]]; then
     # no args: pick from git branches
