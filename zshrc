@@ -191,14 +191,14 @@ worktree() {
       | grep -v '^[+*]' \
       | grep -v 'remotes/.*/HEAD ->' \
       | fzf --height=40% --reverse --header="branch") || return 0
-
     name=$(echo "$selection" | awk '{print $1}' | sed "s|remotes/origin/||")
     git worktree add "../$name" "$name"
-    cd "../$name"
-    return
+  else
+    git worktree add -b "$name" "../$name"
   fi
-  git worktree add -b "$name" "../$name"
-  cd "../$name"
+  current_path=$(git rev-parse --show-toplevel)
+  parent_path="${current_path%/*}"
+  tmux neww tmux-sessionizer "$parent_path/$name"
   return
 }
 
