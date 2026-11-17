@@ -240,6 +240,12 @@ eval "$(mise activate zsh)"
 # zsh plugins
 # =========================================================
 
+# register autoloads
+fpath=($HOME/.zsh/autoloads $fpath)
+for f in $(ls $HOME/.zsh/autoloads); do
+  autoload $f
+done
+
 # load zsh plugins
 for plug in \
   $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh \
@@ -250,3 +256,4 @@ do
     source $plug
   fi
 done
+

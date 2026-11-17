@@ -1,0 +1,223 @@
+emulate -L zsh
+setopt localoptions pipefail no_monitor
+
+local selected pane_arg target pane_pipe pane_title pane_label cmd
+local dir log history fifo lock result runner writer
+local pane_source pane_ready pane_done pane_error
+local jq_bin bat_bin zsh_bin query='' key tailpid lockfd fzf_status=0 cleanup_ok=1
+local -a pane_args panes started_targets
+local -aU targets
+local json_filter='if (try (gsub("\u001b\\[[0-9;:]*m"; "") | fromjson | true) catch false) then "J\t" + $source + "\t" + . else "T\t" + $source + "\t" + . end'
+
+# Felles for alle tre: fjern en eventuell ^J/^T-prefiks fra spørringen og legg resten i $rest.
+local strip='rest=$FZF_QUERY; if [ "${rest%% *}" = "^J" ] || [ "${rest%% *}" = "^T" ]; then rest=${rest#???}; fi'
+local json_toggle="ctrl-j:transform-query($strip; printf '^J %s' \"\$rest\")"
+local text_toggle="ctrl-t:transform-query($strip; printf '^T %s' \"\$rest\")"
+local all_toggle="ctrl-g:transform-query($strip; if [ \"\${FZF_QUERY%% *}\" = '^J' ]; then printf %s \"\$rest\"; else printf '^J %s' \"\$rest\"; fi)"
+
+if [[ -z $TMUX ]]; then
+  print -u2 'Kjør logs-tmux fra en tmux-pane.'
+  return 1
+fi
+for cmd in tmux fzf jq bat zsh mktemp mkfifo tail; do
+  if (( ! $+commands[$cmd] )); then
+    print -u2 -- "Mangler kommando: $cmd"
+    return 1
+  fi
+done
+if ! zmodload zsh/system; then
+  print -u2 'Mangler zsh-modulen zsh/system.'
+  return 1
+fi
+
+if (( $# )); then
+  pane_args=("$@")
+else
+  panes=("${(@f)$(tmux list-panes -a -F '#{pane_id} #{session_name}:#{window_index}.#{pane_index} [#{pane_title}] #{window_name} #{pane_current_command}')}")
+  panes=("${(@)panes:#${(b)TMUX_PANE:-} *}")
+  selected=$(print -rC1 -- $panes |
+    fzf --multi --no-sort --layout=reverse --header='Velg flere panes med Tab; bekreft med Enter') || return 1
+  pane_args=("${(@)${(@f)selected}%% *}")
+fi
+for pane_arg in "${pane_args[@]}"; do
+  target=$(tmux display-message -p -t "$pane_arg" '#{pane_id}') || return 1
+  if [[ -n ${TMUX_PANE:-} && $target == $TMUX_PANE ]]; then
+    print -u2 'Velg en annen pane enn den logs-tmux kjører i.'
+    return 1
+  fi
+  pane_pipe=$(tmux display-message -p -t "$target" '#{pane_pipe}') || return 1
+  if [[ $pane_pipe != 0 ]]; then
+    print -u2 -- "Pane $target har allerede en pipe-pane. Den blir ikke erstattet."
+    return 1
+  fi
+  targets+=("$target")
+done
+if (( ! ${#targets} )); then
+  print -u2 'Ingen panes valgt.'
+  return 1
+fi
+
+jq_bin=${commands[jq]}
+bat_bin=${commands[bat]}
+zsh_bin=${commands[zsh]}
+if ! "$zsh_bin" -f -c 'zmodload zsh/system' 2>/dev/null; then
+  print -u2 'Kunne ikke laste zsh/system i zsh-prosessen som skal samle loggene.'
+  return 1
+fi
+dir=$(mktemp -d "${TMPDIR:-/tmp}/logs-tmux.XXXXXXXX") || return 1
+log=$dir/log
+history=$dir/history
+fifo=$dir/fifo
+lock=$dir/lock
+result=$dir/result
+runner=$dir/runner
+writer=$dir/writer
+
+{
+  mkfifo "$fifo" && : > "$log" && : > "$history" && : > "$lock" || return 1
+
+  # Hver pane har sin egen skriver. Låsen gjør at hele linjer havner samlet i
+  # loggen, og at tømming (Ctrl-L) aldri skjer midt i en linje.
+  cat > "$writer" <<'WRITER'
+emulate -L zsh
+zmodload zsh/system || exit 1
+lock=$1 log=$2 ready=$3
+if ! zsystem flock -t 3 -i 0.01 -f lockfd "$lock"; then
+  print -u2 'Kunne ikke låse loggen ved oppstart.'
+  exit 1
+fi
+zsystem flock -u "$lockfd" || exit 1
+: > "$ready" || exit 1
+while IFS= read -r line; do
+  if ! zsystem flock -f lockfd "$lock"; then
+    print -u2 'Kunne ikke låse loggen.'
+    exit 1
+  fi
+  if ! print -r -- "$line" >> "$log"; then
+    zsystem flock -u "$lockfd"
+    exit 1
+  fi
+  zsystem flock -u "$lockfd" || exit 1
+done
+WRITER
+
+  # Kjøres av tmux pipe-pane. stdin er panens output; stdout går tilbake inn i
+  # panen (-I), så ingenting her må skrive til stdout. -I gjør også at tmux
+  # merker med en gang at runneren er ferdig og fjerner pipe-pane.
+  # Avslutning: logs-tmux lukker pipe-pane, jq får EOF, og kjeden avslutter.
+  cat > "$runner" <<'RUNNER'
+#!/bin/sh
+jq_bin=$1 zsh_bin=$2 writer=$3 source_file=$4 json_filter=$5 lock=$6 log=$7 ready=$8 done=$9
+source=$(cat "$source_file")
+"$jq_bin" --unbuffered -Rr --arg source "$source" "$json_filter" |
+  "$zsh_bin" -f "$writer" "$lock" "$log" "$ready" > /dev/null
+printf '%s\n' "$?" > "$done"
+RUNNER
+
+  # Koble til alle live-strømmene før vi henter scrollback.
+  for target in "${targets[@]}"; do
+    pane_pipe=$(tmux display-message -p -t "$target" '#{pane_pipe}') || return 1
+    if [[ $pane_pipe != 0 ]]; then
+      print -u2 -- "Pane $target har allerede en pipe-pane. Den blir ikke erstattet."
+      return 1
+    fi
+    pane_title=$(tmux display-message -p -t "$target" '#{pane_title}') || return 1
+    pane_label="$target [${pane_title//[[:cntrl:]]/ }]"
+    pane_source=$dir/source-$target
+    pane_ready=$dir/ready-$target
+    pane_done=$dir/done-$target
+    pane_error=$dir/error-$target
+    print -rn -- "$pane_label" > "$pane_source" || return 1
+    cmd="sh ${(qq)runner} ${(qq)jq_bin} ${(qq)zsh_bin} ${(qq)writer} ${(qq)pane_source} ${(qq)json_filter} ${(qq)lock} ${(qq)log} ${(qq)pane_ready} ${(qq)pane_done} 2>> ${(qq)pane_error}"
+    # tmux utvider både formatuttrykk og tidsformat i pipe-kommandoen.
+    cmd=${${cmd//\#/##}//\%/%%}
+    tmux pipe-pane -IO -t "$target" "$cmd" || return 1
+    started_targets+=("$target")
+    repeat 50 { [[ -e $pane_ready || -e $pane_done ]] && break; sleep 0.1 }
+    if [[ ! -e $pane_ready || -e $pane_done ]]; then
+      print -u2 -- "Kunne ikke starte innsamling fra pane $target."
+      if [[ -s $pane_error ]]; then
+        head -n 10 "$pane_error" >&2
+      elif [[ -e $pane_done ]]; then
+        print -u2 -- "Innsamleren avsluttet ved oppstart (status $(<"$pane_done"))."
+      else
+        print -u2 'Innsamleren svarte ikke innen tidsfristen.'
+      fi
+      return 1
+    fi
+  done
+
+  # Historikken er ordnet per pane; overlapper kan forekomme mot live-strømmen.
+  for target in "${targets[@]}"; do
+    if ! tmux capture-pane -p -t "$target" -S - -J |
+      "$jq_bin" -Rr --arg source "$(<"$dir/source-$target")" "$json_filter" >> "$history"; then
+      print -u2 -- "Kunne ikke hente scrollback fra pane $target."
+      return 1
+    fi
+  done
+
+  while true; do
+    { cat -- "$history" && exec tail -n +1 -f "$log" } > "$fifo" &
+    tailpid=$!
+    fzf --ansi --no-sort --extended --layout=reverse \
+      --delimiter='\t' --print-query --expect=ctrl-l,ctrl-c \
+      --query="$query" \
+      --header='Ctrl-J: JSON | Ctrl-T: tekst | Ctrl-G: alle/JSON | Ctrl-L: tøm | Ctrl-P: preview | Ctrl-C: lukk' \
+      --bind "$json_toggle" --bind "$text_toggle" --bind "$all_toggle" \
+      --bind 'ctrl-p:change-preview-window(right:40%:wrap|right:60%:wrap|right:80%:wrap|hidden)' \
+      --bind 'ctrl-o:change-preview-window(right:60%:wrap|down:50%:wrap|left:60%:wrap|up:50%:wrap)' \
+      --bind 'alt-up:first,alt-down:last' \
+      --preview "(printf '%s\\n' {s3..} | jq . 2>/dev/null || printf '%s\\n' {s3..}) | ${(qq)bat_bin} --language=json --color=always --style=plain --paging=never" \
+      --preview-window=down:50%:wrap < "$fifo" > "$result"
+    fzf_status=$?
+    kill "$tailpid" 2>/dev/null
+    wait "$tailpid" 2>/dev/null
+    tailpid=''
+
+    key=''
+    { IFS= read -r query; IFS= read -r key } < "$result"
+    if [[ $key == ctrl-c ]]; then
+      fzf_status=0
+      break
+    fi
+    if [[ $key == ctrl-l ]]; then
+      if ! zsystem flock -t 3 -i 0.01 -f lockfd "$lock"; then
+        print -u2 'Kunne ikke låse loggen for tømming.'
+        fzf_status=1
+        break
+      fi
+      : > "$history" && : > "$log"
+      fzf_status=$?
+      zsystem flock -u "$lockfd"
+      if (( fzf_status )); then
+        print -u2 'Kunne ikke tømme loggen.'
+        break
+      fi
+      continue
+    fi
+    (( fzf_status == 0 )) || break
+    if [[ -z $key ]]; then
+      tail -n +3 "$result" | cut -f3-
+    fi
+    break
+  done
+} always {
+  if [[ -n $tailpid ]]; then
+    kill "$tailpid" 2>/dev/null
+    wait "$tailpid" 2>/dev/null
+  fi
+  # Lukker pipe-pane; jq får EOF og runneren skriver done-filen.
+  for target in "${started_targets[@]}"; do
+    tmux pipe-pane -t "$target" 2>/dev/null
+  done
+  for target in "${started_targets[@]}"; do
+    repeat 50 { [[ -e $dir/done-$target ]] && break; sleep 0.1 }
+    [[ -e $dir/done-$target ]] || cleanup_ok=0
+  done
+  if (( cleanup_ok )); then
+    rm -rf -- "$dir"
+  else
+    print -u2 -- "Kunne ikke bekrefte opprydding; midlertidige filer ligger i $dir"
+  fi
+}
+return $fzf_status
