@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 scripts_folder="$HOME/.local/scripts"
-backup_folder="$HOME/.backup_dotfiles/dotfiles_$(date +%Y%m%d_%H%M%S)"
+backup_folder="$HOME/.backup_dotfiles/$(date +%Y%m%d_%H%M%S)_dotfiles"
 
 mkdir -p "$scripts_folder"
 mkdir -p "$backup_folder"
 mkdir -p $HOME/.zsh/
+mkdir -p $HOME/.zsh/autoloads
 mkdir -p $HOME/.local/bin
 
 zsh_syntax_highlighting="$HOME/.zsh/zsh-syntax-highlighting"
@@ -29,6 +30,12 @@ if [[ "$(uname)" == "Darwin" ]]; then
 else
   cat "$PWD/zshrc-linux" >>"$zshrc"
 fi
+
+autoloads="$HOME/.zsh/autoloads"
+if [[ -d "$autoloads" ]]; then
+  mv "$autoloads" "$backup_folder"
+fi
+cp -a "$PWD/autoloads/." "$HOME/.zsh/autoloads"
 
 if [[ "$(uname)" == "Darwin" ]]; then
   ghostty_folder="$HOME/Library/Application Support/com.mitchellh.ghostty"
